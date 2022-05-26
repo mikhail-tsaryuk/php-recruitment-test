@@ -6,6 +6,7 @@ use Snowdog\DevTest\Model\PageManager;
 use Snowdog\DevTest\Model\UserManager;
 use Snowdog\DevTest\Model\Website;
 use Snowdog\DevTest\Model\WebsiteManager;
+use Snowdog\DevTest\Model\PageVisitManager;
 
 class WebsiteAction
 {
@@ -26,12 +27,22 @@ class WebsiteAction
      * @var Website
      */
     private $website;
+    /**
+     * @var PageVisitManager
+     */
+    private $pageVisitManager;
 
-    public function __construct(UserManager $userManager, WebsiteManager $websiteManager, PageManager $pageManager)
+    public function __construct(
+        UserManager $userManager,
+        WebsiteManager $websiteManager,
+        PageManager $pageManager,
+        PageVisitManager $pageVisitManager
+    )
     {
         $this->websiteManager = $websiteManager;
         $this->pageManager = $pageManager;
         $this->userManager = $userManager;
+        $this->pageVisitManager = $pageVisitManager;
     }
 
     public function execute($id)
@@ -45,7 +56,7 @@ class WebsiteAction
                 $this->website = $website;
             }
         }
-
+        $this->pageVisitManager->insertVisit( 'website', $user->getDisplayName());
         require __DIR__ . '/../view/website.phtml';
     }
 
