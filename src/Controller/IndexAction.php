@@ -22,37 +22,39 @@ class IndexAction
     /**
      * @var PageVisitManager
      */
-    private $visitManager;
+    private $pageVisitManager;
 
     public function __construct(
         UserManager $userManager,
         WebsiteManager $websiteManager,
-        PageVisitManager $visitManager
+        PageVisitManager $pageVisitManager
     )
     {
         $this->websiteManager = $websiteManager;
-        $this->visitManager = $visitManager;
         if (isset($_SESSION['login'])) {
             $this->user = $userManager->getByLogin($_SESSION['login']);
         }
+        $this->pageVisitManager = $pageVisitManager;
     }
 
     protected function getWebsites()
     {
         if($this->user) {
             return $this->websiteManager->getAllByUser($this->user);
-        } 
+        }
+        return [];
+    }
+
+    protected function getLastPageVisit($websiteId)
+    {
+        if ($this->user){
+            return $this->pageVisitManager->getLastWebsiteVisit($websiteId);
+        }
         return [];
     }
 
     public function execute()
     {
-        if ($this->user){
-            $userName = $this->user->getDisplayName();
-        } else {
-            $userName = null;
-        }
-        $this->visitManager->insertVisit('index', $userName);
         require __DIR__ . '/../view/index.phtml';
     }
 }

@@ -56,7 +56,7 @@ class WebsiteAction
                 $this->website = $website;
             }
         }
-        $this->pageVisitManager->insertVisit( 'website', $user->getDisplayName());
+
         require __DIR__ . '/../view/website.phtml';
     }
 
@@ -64,7 +64,12 @@ class WebsiteAction
     {
         if($this->website) {
             return $this->pageManager->getAllByWebsite($this->website);
-        } 
+        }
         return [];
+    }
+
+    protected function getLastPageVisit($pageId)
+    {
+        return $this->pageVisitManager->getLastPageVisit($pageId);
     }
 }

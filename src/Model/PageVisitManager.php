@@ -26,37 +26,19 @@ class PageVisitManager
         $this->time = $time;
     }
 
-    public function createVisitsTable(string $tableName = 'page_visits')
-    {
-        $query = "CREATE TABLE IF NOT EXISTS `$tableName`
-            (
-                increment_id int AUTO_INCREMENT,
-                user_id varchar(255),
-                page_url varchar(255),
-                visit_time varchar(255),
-                primary key (increment_id)
-            );";
-        $this->database->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
-        $statement = $this->database->prepare($query);
-        $isSuccess = $this->database->exec($statement->queryString);
-        if ($isSuccess){
-            return $tableName;
-        }
-        return $isSuccess;
-    }
 
-    public function insertVisit($pageUrl, $userId = null)
+    public function insertVisit($pageId, $websiteId)
     {
-        $this->createVisitsTable();
-        if (!$userId){
-            $userId = 'Guest';
-        }
+        /**
+         * @var Time
+         */
         $time = $this->time->getCurrentTime();
-        $query = "UPDATE `page_visits` SET visit_time = '$time', user_id = '$userId' WHERE page_url = '$pageUrl'";
+
+        $query = "UPDATE `page_visits` SET last_visit = '$time', website_id = '$websiteId' WHERE page_id = '$pageId'";
         $statement = $this->database->prepare($query);
         $result = $this->database->exec($statement->queryString);
         if (!$result){
-            $query = "INSERT INTO `page_visits` (user_id, page_url, visit_time) VALUES ('$userId', '$pageUrl', '$time')";
+            $query = "INSERT INTO `page_visits`  (page_id, website_id, last_visit) VALUES ('$pageId', '$websiteId', '$time')";
             $statement = $this->database->prepare($query);
             $this->database->exec($statement->queryString);
         }
@@ -64,8 +46,24 @@ class PageVisitManager
 
     public function getPagesVisits()
     {
-        $query = "SELECT *  FROM `page_visits`";
+        $query = "SELECT * FROM `page_visits`";
         $statement = $this->database->query($query);
         return $statement->fetchAll();
+    }
+
+    public function getLastWebsiteVisit($websiteId)
+    {
+        $query = "SELECT MAX(last_visit) FROM `page_visits` WHERE website_id = '$websiteId'";
+        $statement = $this->database->query($query);
+        $visit = $statement->fetchAll();
+        return $visit[0]['MAX(last_visit)'] ? : 'Not visited yet' ;
+    }
+
+    public function getLastPageVisit($pageId)
+    {
+        $query = "SELECT last_visit FROM `page_visits` WHERE page_id = '$pageId'";
+        $statement = $this->database->query($query);
+        $visit = $statement->fetchAll();
+        return $visit[0]['last_visit'] ? : 'Not Visited Yet';
     }
 }
