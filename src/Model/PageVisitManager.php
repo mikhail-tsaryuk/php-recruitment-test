@@ -3,7 +3,7 @@
 namespace Snowdog\DevTest\Model;
 
 use Snowdog\DevTest\Core\Database;
-use Snowdog\DevTest\Model\Time;
+
 class PageVisitManager
 {
     /**
@@ -11,59 +11,71 @@ class PageVisitManager
      */
     private $database;
 
-    private $tableName = 'page_visits';
     /**
-     * @var \Snowdog\DevTest\Model\Time
+     * @param Database $database
      */
-    private $time;
-
     public function __construct(
-        Database $database,
-        Time $time
+        Database $database
     )
     {
         $this->database = $database;
-        $this->time = $time;
     }
 
 
+    /**
+     * @param $pageId
+     * @param $websiteId
+     * @return false|string
+     */
     public function insertVisit($pageId, $websiteId)
     {
-        /**
-         * @var Time
-         */
-        $time = $this->time->getCurrentTime();
+        $this->database->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+        $query = $this->database->prepare("UPDATE `page_visits` SET last_visit = NOW(), website_id = :website_id WHERE page_id = :page_id");
+        $query->bindParam('website_id', $websiteId, \PDO::PARAM_STR);
+        $query->bindParam('page_id', $pageId, \PDO::PARAM_STR);
+        $query->execute();
 
-        $query = "UPDATE `page_visits` SET last_visit = '$time', website_id = '$websiteId' WHERE page_id = '$pageId'";
-        $statement = $this->database->prepare($query);
-        $result = $this->database->exec($statement->queryString);
+        $result = $this->database->lastInsertId();
         if (!$result){
-            $query = "INSERT INTO `page_visits`  (page_id, website_id, last_visit) VALUES ('$pageId', '$websiteId', '$time')";
-            $statement = $this->database->prepare($query);
-            $this->database->exec($statement->queryString);
+            $query = $this->database->prepare("INSERT INTO `page_visits`  (page_id, website_id, last_visit) VALUES (:page_id, :website_id, NOW())");
+            $query->bindParam('page_id', $pageId, \PDO::PARAM_STR);
+            $query->bindParam('website_id', $websiteId, \PDO::PARAM_STR);
+            $query->execute();
+            $result = $this->database->lastInsertId();
         }
+        return $result;
     }
 
-    public function getPagesVisits()
-    {
-        $query = "SELECT * FROM `page_visits`";
-        $statement = $this->database->query($query);
-        return $statement->fetchAll();
-    }
-
+    /**
+     * @param $websiteId
+     * @return mixed|string
+     */
     public function getLastWebsiteVisit($websiteId)
     {
-        $query = "SELECT MAX(last_visit) FROM `page_visits` WHERE website_id = '$websiteId'";
-        $statement = $this->database->query($query);
-        $visit = $statement->fetchAll();
+        $query = $this->database->prepare("SELECT MAX(last_visit) FROM `page_visits` WHERE website_id = :website_id");
+        $query->bindParam('website_id', $websiteId);
+        $query->execute();
+        $visit = $query->fetchAll();
         return $visit[0]['MAX(last_visit)'] ? : 'Not visited yet' ;
     }
 
+    /**
+     * @param $pageId
+     * @return mixed|string
+     */
     public function getLastPageVisit($pageId)
     {
-        $query = "SELECT last_visit FROM `page_visits` WHERE page_id = '$pageId'";
-        $statement = $this->database->query($query);
-        $visit = $statement->fetchAll();
+        $query = $this->database->prepare("SELECT last_visit FROM `page_visits` WHERE page_id = :page_id");
+        $query->bindParam('page_id', $pageId);
+        $query->execute();
+        $visit = $query->fetchAll();
         return $visit[0]['last_visit'] ? : 'Not Visited Yet';
     }
+
+//    public function getPagesVisits()
+//    {
+//        $query = "SELECT * FROM `page_visits`";
+//        $statement = $this->database->query($query);
+//        return $statement->fetchAll();
+//    }
 }
